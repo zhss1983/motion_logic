@@ -1,9 +1,0 @@
-python -m pip install --upgrade pip
-
-pip install djangorestframework
-pip install markdown
-pip install django-filter
-
-pip install python-dotenv
-
-django-admin startproject restourant
