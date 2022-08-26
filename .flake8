@@ -1,0 +1,6 @@
+[flake8]
+max-line-length = 120
+disable-noqa = True
+paths = ./src
+max-complexity = 10
+exclude = tests venv env

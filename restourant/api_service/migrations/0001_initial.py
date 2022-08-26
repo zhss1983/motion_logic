@@ -8,45 +8,75 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='ObjectType',
+            name="ObjectType",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(help_text='Тип объекта или организации.', max_length=64, verbose_name='Тип')),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "title",
+                    models.CharField(help_text="Тип объекта или организации.", max_length=64, verbose_name="Тип"),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Organisation',
+            name="Organisation",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(help_text='Название объекта или организации.', max_length=172, verbose_name='Название')),
-                ('address', models.CharField(help_text='Адрес объекта или организации.', max_length=256, verbose_name='Адрес')),
-                ('description', models.TextField(blank=True, default='', help_text='Описание объекта или организации, краткий обзор.', verbose_name='Описание')),
-                ('object_type', models.ForeignKey(blank=True, help_text='Тип объекта или организации.', null=True, on_delete=django.db.models.deletion.SET_NULL, to='api_service.objecttype')),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "title",
+                    models.CharField(
+                        help_text="Название объекта или организации.", max_length=172, verbose_name="Название"
+                    ),
+                ),
+                (
+                    "address",
+                    models.CharField(help_text="Адрес объекта или организации.", max_length=256, verbose_name="Адрес"),
+                ),
+                (
+                    "description",
+                    models.TextField(
+                        blank=True,
+                        default="",
+                        help_text="Описание объекта или организации, краткий обзор.",
+                        verbose_name="Описание",
+                    ),
+                ),
+                (
+                    "object_type",
+                    models.ForeignKey(
+                        blank=True,
+                        help_text="Тип объекта или организации.",
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="api_service.objecttype",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Фирма',
-                'verbose_name_plural': 'Фирмы',
+                "verbose_name": "Фирма",
+                "verbose_name_plural": "Фирмы",
             },
         ),
         migrations.CreateModel(
-            name='Phone',
+            name="Phone",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('phone', models.CharField(blank=True, help_text='Контактный телефон.', max_length=32)),
-                ('organisation', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='api_service.organisation')),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("phone", models.CharField(blank=True, help_text="Контактный телефон.", max_length=32)),
+                (
+                    "organisation",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="api_service.organisation"),
+                ),
             ],
             options={
-                'verbose_name': 'Телефон',
-                'verbose_name_plural': 'Телефоны',
+                "verbose_name": "Телефон",
+                "verbose_name_plural": "Телефоны",
             },
         ),
         migrations.AddConstraint(
-            model_name='organisation',
-            constraint=models.UniqueConstraint(fields=('title', 'address'), name='unique_title_address'),
+            model_name="organisation",
+            constraint=models.UniqueConstraint(fields=("title", "address"), name="unique_title_address"),
         ),
     ]

@@ -6,6 +6,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from .models import Phone, ObjectType, Organisation
 
+
 class PhoneViewSet(ModelViewSet):
     serializer_class = PhoneSerializer
     queryset = Phone.objects.all()
@@ -19,4 +20,3 @@ class ObjectTypeViewSet(ModelViewSet):
 class OrganisationViewSet(ModelViewSet):
     serializer_class = OrganisationSerializer
     queryset = Organisation.objects.all()
-
