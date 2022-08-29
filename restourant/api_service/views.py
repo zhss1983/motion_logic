@@ -2,7 +2,13 @@ from rest_framework import filters
 from rest_framework.viewsets import ModelViewSet
 
 from .models import ObjectType, Organisation, Owner, Phone
-from .serializers import ObjectTypeSerializer, OrganisationSerializer, OwnerSerializer, PhoneSerializer
+from .serializers import (
+    ObjectTypeSerializer,
+    OrganisationByOwnerSerializer,
+    OrganisationSerializer,
+    OwnerSerializer,
+    PhoneSerializer,
+)
 
 
 class PhoneViewSet(ModelViewSet):
@@ -25,3 +31,10 @@ class OrganisationViewSet(ModelViewSet):
     queryset = Organisation.objects.all()
     filter_backends = [filters.SearchFilter]
     search_fields = ["=title", "address"]
+
+
+class OrganisationByOwnerViewSet(ModelViewSet):
+    serializer_class = OrganisationByOwnerSerializer
+    queryset = Owner.objects.all()
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["=owner__title"]

@@ -32,9 +32,6 @@ class ParserView(APIView):
     def extractor(self, data) -> dict:
         raise NotImplementedError
 
-    def ru_en_choice(choice):
-        return choice.get("ru", choice.get("en", ""))
-
     def parser(self, session):
         owner = Organisation.objects.filter(title=self.TITLE).order_by("pk").first()
         if owner is None:
@@ -65,7 +62,7 @@ class ParserView(APIView):
         if results:
             file_output(results, self.FILE_PREFIX)
 
-        serializer = ParsingSerializer(count=len(results))
+        serializer = ParsingSerializer({"count": len(results)})
         logging.info(f"Парсер ресторанов {self.TITLE} завершил работу.")
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -74,27 +71,30 @@ class ParserView(APIView):
 class KFCView(ParserView):
     """Парсер ресторанов KFC."""
 
-    TITLE: str
+    TITLE: str = "KFC"
     URL: str = KFC_URL
-    FILE_PREFIX: str
+    FILE_PREFIX: str = "KFC"
 
     def get_list_parser(self, session, url):
         restaurant_response = post_request(session, url, json=KFC_JSON)
         return return_json(restaurant_response.text, url).get("searchResults", [])
 
     def extractor(self, data):
+        def ru_en_choice(choice):
+            return choice.get("ru", choice.get("en", ""))
+
         store = data.get("store", {})
 
         contacts = store.get("contacts", {})
 
-        address = self.ru_en_choice(contacts.get("streetAddress", {}))
+        address = ru_en_choice(contacts.get("streetAddress", {}))
 
         coordinate = contacts.get("coordinates", {}).get("geometry", {}).get("coordinates", (0, 0))
         latitude, longitude = float(coordinate[0]), float(coordinate[1])
 
         phone = contacts.get("phoneNumber", "")
 
-        title = self.ru_en_choice(store.get("title", {}))
+        title = ru_en_choice(store.get("title", {}))
 
         description = []
         dist = int(data.get("distanceMeters", MAX_METRO_DISTANT))

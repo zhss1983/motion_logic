@@ -14,7 +14,6 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR / ".env")
@@ -26,17 +25,13 @@ load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-u2*x#j-wrb$_st$93g&*rk+^jmu7cxvt1rwp_g95$u&1am!1er")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
     "web",
-    #  '*',
 ]
-
-
-# Application definition
 
 INSTALLED_APPS = [
     "api_service.apps.ApiServiceConfig",
@@ -96,7 +91,7 @@ else:
     DATABASES = {
         "default": {
             "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.postgresql"),
-            "NAME": os.getenv("DB_NAME", "restourant_postgres"),
+            "NAME": os.getenv("POSTGRES_DB", "restourant_postgres"),
             "USER": os.getenv("POSTGRES_USER", "restourant_user"),
             "PASSWORD": os.getenv("POSTGRES_PASSWORD", "restourant_pass"),
             "HOST": os.getenv("DB_HOST", "db"),

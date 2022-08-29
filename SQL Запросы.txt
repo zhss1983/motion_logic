@@ -1,0 +1,16 @@
+SELECT COUNT(*) as count, (
+	SELECT api_service_organisation.title
+	FROM api_service_organisation
+	WHERE api_service_organisation.id = api_service_owner.owner_id
+) as title
+FROM api_service_organisation
+LEFT JOIN api_service_owner ON api_service_owner.organisation_id = api_service_organisation.id
+WHERE api_service_owner.owner_id IS NOT NULL
+GROUP BY api_service_owner.owner_id
+LIMIT 10;
+
+
+count	title
+404	KFC
+815	Burger King
+852	McDonalds

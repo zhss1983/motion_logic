@@ -16,7 +16,7 @@ class OrganisationSerializer(ModelSerializer):
     class Meta:
         UNIQUE_ERROR = "Две организации с одним и тем же названием не могут находиться по одному и тому же адресу."
         model = Organisation
-        fields = ("pk", "title", "object_type", "address", "latitude", "longitude", "description")
+        fields = ("title", "object_type", "address", "latitude", "longitude", "description")
         validators = (
             UniqueTogetherValidator(
                 queryset=Organisation.objects.all(),
@@ -31,7 +31,7 @@ class PhoneSerializer(ModelSerializer):
 
     class Meta:
         model = Phone
-        fields = ("pk", "phone", "organisation")
+        fields = ("phone", "organisation")
 
 
 class OwnerSerializer(ModelSerializer):
@@ -40,4 +40,8 @@ class OwnerSerializer(ModelSerializer):
 
     class Meta:
         model = Owner
-        fields = ("pk", "organisation", "owner")
+        fields = ("organisation", "owner")
+
+
+class OrganisationByOwnerSerializer(OwnerSerializer):
+    organisation = OrganisationSerializer()
