@@ -37,4 +37,4 @@ class OrganisationByOwnerViewSet(ModelViewSet):
     serializer_class = OrganisationByOwnerSerializer
     queryset = Owner.objects.all()
     filter_backends = [filters.SearchFilter]
-    search_fields = ["=owner__title"]
+    search_fields = ["owner__title"]
