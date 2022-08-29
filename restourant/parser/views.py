@@ -9,7 +9,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .configs import configure_argument_parser, configure_logging
+from .configs import configure_logging
 from .constants import BURGER_KING_URL, KFC_JSON, KFC_URL, MAX_COUNT_RESTAURANTS, MAX_METRO_DISTANT, MCDONALDS_URL
 from .outputs import file_output
 from .serializers import ParsingSerializer
@@ -27,12 +27,15 @@ class ParserView(APIView):
     FILE_PREFIX: str
 
     def get_list_parser(self, session, url) -> list:
+        """Производит запрос соответствующим методом для получения данных с API сайта."""
         raise NotImplementedError
 
     def extractor(self, data) -> dict:
+        """Производит извлечение требуемых данных из уникальной структуры ответа API сайта"""
         raise NotImplementedError
 
     def parser(self, session):
+        """Перебирает список организации и сохраняет его в БД. Отдаёт полученные данные далее."""
         owner = Organisation.objects.filter(title=self.TITLE).order_by("pk").first()
         if owner is None:
             object_type, _ = ObjectType.objects.get_or_create(title="Организация")
@@ -50,6 +53,7 @@ class ParserView(APIView):
         return result
 
     def post(self, request, format=None):
+        """Загружает данные от сторонних API, обрабатывает их и дополнительно выполняет сохранеине в файл."""
         configure_logging()
         logging.info(f"Парсер ресторанов {self.TITLE} запущен!")
         session = requests_cache.CachedSession(

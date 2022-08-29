@@ -1,4 +1,4 @@
-from rest_framework.serializers import IntegerField, ModelSerializer, Serializer
+from rest_framework.serializers import IntegerField, Serializer
 
 
 class ParsingSerializer(Serializer):
