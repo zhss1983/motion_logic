@@ -1,5 +1,4 @@
 [MASTER]
-init-hook='import sys; sys.path.append("src")'
 disable=
     C0114,  # missing-module-docstring
     C0115,  # missing-class-docstring
@@ -7,3 +6,5 @@ disable=
 
 [DESIGN]
 max-attributes=9
+load-plugins=pylint_django
+django-settings-module=your.app.settings

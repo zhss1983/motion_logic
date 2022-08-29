@@ -1,15 +1,18 @@
-from .serializers import PhoneSerializer, OrganisationSerializer, ObjectTypeSerializer
-from django.shortcuts import get_object_or_404
-
-from rest_framework.pagination import PageNumberPagination
+from rest_framework import filters
 from rest_framework.viewsets import ModelViewSet
 
-from .models import Phone, ObjectType, Organisation
+from .models import ObjectType, Organisation, Owner, Phone
+from .serializers import ObjectTypeSerializer, OrganisationSerializer, OwnerSerializer, PhoneSerializer
 
 
 class PhoneViewSet(ModelViewSet):
     serializer_class = PhoneSerializer
     queryset = Phone.objects.all()
+
+
+class OwnerViewSet(ModelViewSet):
+    serializer_class = OwnerSerializer
+    queryset = Owner.objects.all()
 
 
 class ObjectTypeViewSet(ModelViewSet):
@@ -20,3 +23,5 @@ class ObjectTypeViewSet(ModelViewSet):
 class OrganisationViewSet(ModelViewSet):
     serializer_class = OrganisationSerializer
     queryset = Organisation.objects.all()
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["=title", "address"]

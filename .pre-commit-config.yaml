@@ -23,11 +23,11 @@ repos:
     - id: isort
       args: [ --profile, black, --line-length=120 ]
 
-- repo: local
-  hooks:
-    - id: pylint
-      name: pylint
-      entry: pylint
-      language: system
-      types: [python]
-      args: [ -j=0, --max-line-length=120, src/]
+#- repo: local
+#  hooks:
+#    - id: pylint
+#      name: pylint
+#      entry: pylint
+#      language: system
+#      types: [python]
+#      args: [ -j=0, --max-line-length=120, src/]
