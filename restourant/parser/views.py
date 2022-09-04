@@ -17,7 +17,7 @@ from .constants import MAX_COUNT_RESTAURANTS, MAX_METRO_DISTANT
 from .exceptions import ParserError
 from .models.burgerking import BurgerKingSearchResultsSerializer
 from .models.kfc import KFCSearchResultsSerializer
-from .models.mcdonalds import McDonaldsBaseModel
+from .models.mcdonalds import McDonaldsSerializer
 from .outputs import file_output
 from .serializers import ParsingSerializer
 from .utils import comma_space, create_records, end_dot
@@ -279,9 +279,10 @@ class McDonaldsView(ParserView):
             except requests.exceptions.ConnectionError:
                 logging.exception("Страница не найдена URL %s", unit)
                 continue
-            try:
-                data = McDonaldsBaseModel.parse_raw(response.text)
-            except ValidationError as exc:
+            serializer = McDonaldsSerializer(data=json.loads(response.text))
+            if serializer.is_valid():
+                data = serializer.data
+            else:
                 logging.exception(
                     "Ошибка валидации %s.\nURL %s\nСтатус ответа: %s\nТекст ответа: %s",
                     self.__class__.TITLE,
@@ -290,24 +291,24 @@ class McDonaldsView(ParserView):
                     response.text,
                 )
                 continue
-            if data.message.startswith("Restaurant with id"):
+            if data["message"].startswith("Restaurant with id"):
                 continue
             yield data
 
     def extractor(self, data):
         description = []
-        for station in data.metro:
-            if station.dist < MAX_METRO_DISTANT:
-                description.append(f"Станция метро {station.name}, расстояние {station.dist} м.")
-        for feature in data.restaurant.features:
-            description.append(end_dot(feature.name))
+        for station in data["metro"]:
+            if station["dist"] < MAX_METRO_DISTANT:
+                description.append(f"Станция метро {station['name']}, расстояние {station['dist']} м.")
+        for feature in data["restaurant"]["features"]:
+            description.append(end_dot(feature["name"]))
         description = end_dot(" ".join(description))
 
         return {
             "description": description,
-            "address": end_dot(comma_space(data.restaurant.address)),
-            "title": end_dot(comma_space(data.restaurant.name)),
-            "phone": data.restaurant.phone,
+            "address": end_dot(comma_space(data["restaurant"]["address"])),
+            "title": end_dot(comma_space(data["restaurant"]["name"])),
+            "phone": data["restaurant"]["phone"],
             "latitude": 0,
             "longitude": 0,
         }
