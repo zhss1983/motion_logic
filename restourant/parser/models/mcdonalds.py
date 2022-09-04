@@ -1,4 +1,4 @@
-from rest_framework.serializers import BooleanField, CharField, FloatField, IntegerField, ListField, Serializer
+from rest_framework.serializers import CharField, IntegerField, ListField, Serializer
 
 from ..constants import MAX_METRO_DISTANT
 

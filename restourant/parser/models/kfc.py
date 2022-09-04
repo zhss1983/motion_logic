@@ -1,6 +1,4 @@
-from rest_framework.serializers import BooleanField, CharField, FloatField, IntegerField, ListField, Serializer
-
-from ..constants import MAX_METRO_DISTANT
+from rest_framework.serializers import CharField, FloatField, ListField, Serializer
 
 
 class KFCGeometrySerializer(Serializer):

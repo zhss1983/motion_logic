@@ -1,4 +1,4 @@
-from rest_framework.serializers import BooleanField, CharField, FloatField, IntegerField, Serializer
+from rest_framework.serializers import BooleanField, CharField, FloatField, Serializer
 
 
 class BurgerKingSerializer(Serializer):

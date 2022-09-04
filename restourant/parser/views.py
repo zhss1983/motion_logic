@@ -7,7 +7,6 @@ import requests
 import requests_cache
 from api_service.models import ObjectType, Organisation
 from django.db import transaction
-from pydantic import ValidationError
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
