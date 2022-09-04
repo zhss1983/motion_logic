@@ -8,6 +8,7 @@
  [Django Rest Framework](https://www.django-rest-framework.org/),
  [Docker-Compose](https://docs.docker.com/compose/gettingstarted/),
  [pre-commit](https://pre-commit.com/index.html),
+ [pidantic](https://pydantic-docs.helpmanual.io/),
  [black](https://pypi.org/project/black/)**
 
 ## Описание:
