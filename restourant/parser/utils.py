@@ -1,18 +1,6 @@
 from api_service.models import Organisation, Owner, Phone
 
 
-def get_response(session: object, url: object, *args: object, **kwargs: object) -> object:
-    response = session.get(url, *args, **kwargs)
-    response.encoding = "utf-8"
-    return response
-
-
-def post_request(session, url, data=None, json=None, **kwargs):
-    response = session.post(url, data=data, json=json, **kwargs)
-    response.encoding = "utf-8"
-    return response
-
-
 def end_dot(text: str) -> str:
     return text.strip(". \n\t") + "."
 

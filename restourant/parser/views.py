@@ -2,21 +2,24 @@ import logging
 import random
 from urllib.parse import urljoin
 
+import requests
 import requests_cache
 from api_service.models import ObjectType, Organisation
 from django.db import transaction
+from pydantic import ValidationError
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .configs import configure_logging
-from .constants import KFC_JSON, KFC_URL, MAX_COUNT_RESTAURANTS, MAX_METRO_DISTANT, MCDONALDS_URL
+from .constants import MAX_COUNT_RESTAURANTS, MAX_METRO_DISTANT
+from .exceptions import ParserError
 from .models.burgerking import BurgerKingBaseModelSearchResults
 from .models.kfc import KFCBaseModelSearchResults
 from .models.mcdonalds import McDonaldsBaseModel
 from .outputs import file_output
 from .serializers import ParsingSerializer
-from .utils import comma_space, create_records, end_dot, get_response, post_request
+from .utils import comma_space, create_records, end_dot
 
 
 class ParserView(APIView):
@@ -29,7 +32,14 @@ class ParserView(APIView):
     URL: str
     FILE_PREFIX: str
 
-    def get_list_parser(self, session, url) -> list:
+    def __init__(self):
+        configure_logging()
+        self.session = requests_cache.CachedSession(
+            cache_name=self.FILE_PREFIX + "_cache", backend="sqlite", expire_after=60 * 60 * 24
+        )
+        super().__init__()
+
+    def get_list_parser(self, url) -> list:
         """Производит запрос соответствующим методом для получения данных с API сайта."""
         raise NotImplementedError
 
@@ -44,7 +54,7 @@ class ParserView(APIView):
             object_type, _ = ObjectType.objects.get_or_create(title="Организация")
             owner = Organisation.objects.create(title=self.TITLE, address="Россия", object_type=object_type)
 
-        data_list = self.get_list_parser(session, self.URL)
+        data_list = self.get_list_parser(self.URL)
 
         result = []
         for data in data_list:
@@ -57,21 +67,17 @@ class ParserView(APIView):
 
     def post(self, request, format=None):
         """Загружает данные от сторонних API, обрабатывает их и дополнительно выполняет сохранеине в файл."""
-        configure_logging()
         logging.info(f"Парсер ресторанов {self.TITLE} запущен!")
-        session = requests_cache.CachedSession(
-            cache_name=self.FILE_PREFIX + "_cache", backend="sqlite", expire_after=60 * 60 * 24
-        )
-
         with transaction.atomic():
-            results = self.parser(session)
-
+            try:
+                results = self.parser(self.session)
+            except ParserError:
+                serializer = ParsingSerializer({"count": 0})
+                return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
         if results:
             file_output(results, self.FILE_PREFIX)
-
         serializer = ParsingSerializer({"count": len(results)})
         logging.info(f"Парсер ресторанов {self.TITLE} завершил работу.")
-
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -79,7 +85,7 @@ class KFCView(ParserView):
     """Парсер ресторанов KFC."""
 
     TITLE: str = "KFC"
-    URL: str = KFC_URL
+    URL: str = "https://api.kfc.com/api/store/v2/store.geo_search"
     FILE_PREFIX: str = "KFC"
     FEATURE = {
         "wifi": "WiFi.",
@@ -110,10 +116,26 @@ class KFCView(ParserView):
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 " "Safari/537.36"
         ),
     }
+    KFC_JSON = {"coordinates": [55.7, 37.5], "radiusMeters": 100000, "showClosed": True}
 
-    def get_list_parser(self, session, url):
-        response = post_request(session, url, json=KFC_JSON, headers=self.__class__.HEADERS)
-        return KFCBaseModelSearchResults.parse_raw(response.text).searchResults
+    def get_list_parser(self, url):
+        try:
+            response = self.session.post(url, json=self.__class__.KFC_JSON, headers=self.__class__.HEADERS)
+        except requests.exceptions.ConnectionError as exc:
+            logging.exception("Страница не найдена URL %s", url)
+            raise ParserError()
+        try:
+            return KFCBaseModelSearchResults.parse_raw(response.text).searchResults
+        except ValidationError as exc:
+            logging.exception(
+                "Ошибка валидации %s.\nURL %s\nPOST json: %s\nСтатус ответа: %s\nТекст ответа: %s",
+                self.__class__.TITLE,
+                url,
+                self.__class__.KFC_JSON.dump(),
+                response.status_code,
+                response.text,
+            )
+            raise ParserError()
 
     def extractor(self, data):
         def ru_en_choice(choice):
@@ -170,9 +192,23 @@ class BurgerKingView(ParserView):
 
     FILE_PREFIX: str = "Burger_King"
 
-    def get_list_parser(self, session, url):
-        response = get_response(session, url, verify=False, headers=self.__class__.HEADERS)
-        return BurgerKingBaseModelSearchResults.parse_raw(response.text).items
+    def get_list_parser(self, url):
+        try:
+            response = self.session.get(url, verify=False, headers=self.__class__.HEADERS)
+        except requests.exceptions.ConnectionError as exc:
+            logging.exception("Страница не найдена URL %s", url)
+            raise ParserError()
+        try:
+            return BurgerKingBaseModelSearchResults.parse_raw(response.text).items
+        except ValidationError as exc:
+            logging.exception(
+                "Ошибка валидации %s.\nURL %s\nСтатус ответа: %s\nТекст ответа: %s",
+                self.__class__.TITLE,
+                url,
+                response.status_code,
+                response.text,
+            )
+            raise ParserError()
 
     def extractor(self, data):
         description = []
@@ -205,9 +241,8 @@ class McDonaldsView(ParserView):
     """Парсер ресторанов McDonalds."""
 
     TITLE: str = "McDonalds"
-    URL: str = MCDONALDS_URL
+    URL: str = "https://vkusnoitochka.ru/api/restaurant/"
     FILE_PREFIX: str = "McDonalds"
-
     HEADERS = {
         "accept": (
             "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,"
@@ -230,12 +265,26 @@ class McDonaldsView(ParserView):
         ),
     }
 
-    def get_list_parser(self, session, url):
-        restaurants = [urljoin(MCDONALDS_URL, str(count)) for count in range(1, MAX_COUNT_RESTAURANTS)]
+    def get_list_parser(self, url):
+        restaurants = [urljoin(self.__class__.URL, str(count)) for count in range(1, MAX_COUNT_RESTAURANTS)]
         random.shuffle(restaurants)  # По уму ещё бы и задержку вставить, что бы не видно в логах было что парсят.
         for unit in restaurants:
-            response = get_response(session, unit, verify=False, headers=self.__class__.HEADERS)
-            data = McDonaldsBaseModel.parse_raw(response.text)
+            try:
+                response = self.session.get(unit, verify=False, headers=self.__class__.HEADERS)
+            except requests.exceptions.ConnectionError:
+                logging.exception("Страница не найдена URL %s", unit)
+                continue
+            try:
+                data = McDonaldsBaseModel.parse_raw(response.text)
+            except ValidationError as exc:
+                logging.exception(
+                    "Ошибка валидации %s.\nURL %s\nСтатус ответа: %s\nТекст ответа: %s",
+                    self.__class__.TITLE,
+                    unit,
+                    response.status_code,
+                    response.text,
+                )
+                continue
             if data.message.startswith("Restaurant with id"):
                 continue
             yield data
