@@ -1,39 +1,16 @@
-import json
-import logging
-
-import requests
-from api_service.models import ObjectType, Organisation, Owner, Phone
+from api_service.models import Organisation, Owner, Phone
 
 
-def get_response(session, url, *args, **kwargs):
-    try:
-        response = session.get(url, *args, **kwargs)
-        response.encoding = "utf-8"
-        return response
-    except requests.RequestException as exc:
-        logging.exception("Возникла ошибка при загрузке страницы %s", url, stack_info=True)
-        raise requests.RequestException from exc
+def get_response(session: object, url: object, *args: object, **kwargs: object) -> object:
+    response = session.get(url, *args, **kwargs)
+    response.encoding = "utf-8"
+    return response
 
 
 def post_request(session, url, data=None, json=None, **kwargs):
-    try:
-        response = session.post(url, data=data, json=json, **kwargs)
-        response.encoding = "utf-8"
-        return response
-    except requests.RequestException as exc:
-        logging.exception("Возникла ошибка при отправке страницы %s", url, stack_info=True)
-        dict_dump = json.dump(kwargs)
-        logging.error("url: %s\ndata = %s\ndict = %s", url, data, dict_dump)
-        raise requests.RequestException from exc
-
-
-def return_json(text: str, url: str = ""):
-    try:
-        return json.loads(text)
-    except ValueError as exc:
-        logging.exception("Возникла ошибка при декодировании ответа с сайта", url, stack_info=True)
-        logging.error("Текст ответа с сайта %s", text)
-        raise ValueError from exc
+    response = session.post(url, data=data, json=json, **kwargs)
+    response.encoding = "utf-8"
+    return response
 
 
 def end_dot(text: str) -> str:
@@ -45,7 +22,6 @@ def comma_space(text: str) -> str:
 
 
 def create_records(item):
-
     organisation, _ = Organisation.objects.get_or_create(
         title=item["title"],
         object_type=item["object_type"],

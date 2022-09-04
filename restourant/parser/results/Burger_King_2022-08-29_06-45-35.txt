@@ -1,4 +1,4 @@
-[{'address': 'Город Москва,Вавилова ул, 3,',
+ [{'address': 'Город Москва,Вавилова ул, 3,',
   'breakfast': True,
   'children_party': False,
   'id': 80,
