@@ -125,7 +125,8 @@ class KFCView(ParserView):
         except requests.exceptions.ConnectionError as exc:
             logging.exception("Страница не найдена URL %s", url)
             raise ParserError()
-        serializer = KFCSearchResultsSerializer(data=json.loads(response.text))
+        data = json.loads(response.text)
+        serializer = KFCSearchResultsSerializer(data=data)
         if serializer.is_valid():
             return serializer.data["searchResults"]
         else:
