@@ -131,7 +131,7 @@ class KFCView(ParserView):
                 "Ошибка валидации %s.\nURL %s\nPOST json: %s\nСтатус ответа: %s\nТекст ответа: %s",
                 self.__class__.TITLE,
                 url,
-                self.__class__.KFC_JSON.dump(),
+                self.__class__.KFC_JSON.dumps(),
                 response.status_code,
                 response.text,
             )
