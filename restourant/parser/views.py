@@ -1,3 +1,4 @@
+import json
 import logging
 import random
 from urllib.parse import urljoin
@@ -14,8 +15,8 @@ from rest_framework.views import APIView
 from .configs import configure_logging
 from .constants import MAX_COUNT_RESTAURANTS, MAX_METRO_DISTANT
 from .exceptions import ParserError
-from .models.burgerking import BurgerKingBaseModelSearchResults
-from .models.kfc import KFCBaseModelSearchResults
+from .models.burgerking import BurgerKingSearchResultsSerializer
+from .models.kfc import KFCSearchResultsSerializer
 from .models.mcdonalds import McDonaldsBaseModel
 from .outputs import file_output
 from .serializers import ParsingSerializer
@@ -107,13 +108,13 @@ class KFCView(ParserView):
         "referer": "https://www.google.com/",
         "sec-ch-ua": '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
         "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": '"Linux"',
+        "sec-ch-ua-platform": "Linux",
         "sec-fetch-dest": "document",
         "sec-fetch-mode": "navigate",
         "sec-fetch-site": "same-origin",
         "upgrade-insecure-requests": "1",
         "user-agent": (
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 " "Safari/537.36"
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"
         ),
     }
     KFC_JSON = {"coordinates": [55.7, 37.5], "radiusMeters": 100000, "showClosed": True}
@@ -124,14 +125,15 @@ class KFCView(ParserView):
         except requests.exceptions.ConnectionError as exc:
             logging.exception("Страница не найдена URL %s", url)
             raise ParserError()
-        try:
-            return KFCBaseModelSearchResults.parse_raw(response.text).searchResults
-        except ValidationError as exc:
+        serializer = KFCSearchResultsSerializer(data=json.loads(response.text))
+        if serializer.is_valid():
+            return serializer.data["searchResults"]
+        else:
             logging.exception(
                 "Ошибка валидации %s.\nURL %s\nPOST json: %s\nСтатус ответа: %s\nТекст ответа: %s",
                 self.__class__.TITLE,
                 url,
-                self.__class__.KFC_JSON.dump(),
+                self.__class__.KFC_JSON.dumps(),
                 response.status_code,
                 response.text,
             )
@@ -139,25 +141,25 @@ class KFCView(ParserView):
 
     def extractor(self, data):
         def ru_en_choice(choice):
-            return choice.ru if choice.ru else choice.en
+            return choice["ru"] if choice["ru"] else choice["en"]
 
-        coordinate = data.store.contacts.coordinates.geometry.coordinates
+        coordinate = data["store"]["contacts"]["coordinates"]["geometry"]["coordinates"]
         latitude, longitude = float(coordinate[0]), float(coordinate[1])
 
         description = []
-        if data.distanceMeters < MAX_METRO_DISTANT:
-            description.append(f"До ближайшего метро {data.distanceMeters} м.")
+        if data["distanceMeters"] < MAX_METRO_DISTANT:
+            description.append(f'До ближайшего метро {data["distanceMeters"]} м.')
 
-        for feature in data.store.features:
+        for feature in data["store"]["features"]:
             if feature in self.__class__.FEATURE:
                 description.append(self.__class__.FEATURE[feature])
         description = end_dot(" ".join(description))
 
         return {
             "description": description,
-            "address": ru_en_choice(data.store.contacts.streetAddress),
-            "title": ru_en_choice(data.store.title),
-            "phone": data.store.contacts.phoneNumber,
+            "address": ru_en_choice(data["store"]["contacts"]["streetAddress"]),
+            "title": ru_en_choice(data["store"]["title"]),
+            "phone": data["store"]["contacts"]["phoneNumber"],
             "latitude": latitude,
             "longitude": longitude,
         }
@@ -185,7 +187,7 @@ class BurgerKingView(ParserView):
         "Sec-Fetch-Mode": "cors",
         "Sec-Fetch-Site": "same-origin",
         "User-Agent": (
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 " "Safari/537.36"
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"
         ),
         "x-burgerking-platform": "web_mobile",
     }
@@ -198,9 +200,11 @@ class BurgerKingView(ParserView):
         except requests.exceptions.ConnectionError as exc:
             logging.exception("Страница не найдена URL %s", url)
             raise ParserError()
-        try:
-            return BurgerKingBaseModelSearchResults.parse_raw(response.text).items
-        except ValidationError as exc:
+        data = json.loads(response.text)
+        serializer = BurgerKingSearchResultsSerializer(data=data)
+        if serializer.is_valid():
+            return serializer.data["items"]
+        else:
             logging.exception(
                 "Ошибка валидации %s.\nURL %s\nСтатус ответа: %s\nТекст ответа: %s",
                 self.__class__.TITLE,
@@ -212,28 +216,28 @@ class BurgerKingView(ParserView):
 
     def extractor(self, data):
         description = []
-        if data.breakfast:
+        if data["breakfast"]:
             description.append("Завтраки.")
-        if data.children_party:
+        if data["children_party"]:
             description.append("Детские вечеринки.")
-        if data.metro:
-            description.append(end_dot(data.metro))
-        if data.king_drive:
+        if data["metro"]:
+            description.append(end_dot(data["metro"]))
+        if data["king_drive"]:
             description.append("Кинг Авто.")
-        if data.parking_delivery:
+        if data["parking_delivery"]:
             description.append("Вынос на парковку.")
-        if data.table_delivery:
+        if data["table_delivery"]:
             description.append("Вынос к столику.")
-        if data.wifi:
+        if data["wifi"]:
             description.append("WiFi.")
         description = end_dot(" ".join(description))
         return {
             "description": description,
-            "address": end_dot(data.address),
-            "title": end_dot("Бургер-Кинг: " + comma_space(data.name)),
-            "phone": data.phone,
-            "latitude": data.latitude,
-            "longitude": data.longitude,
+            "address": end_dot(data["address"]),
+            "title": end_dot("Бургер-Кинг: " + comma_space(data["name"])),
+            "phone": data["phone"],
+            "latitude": data["latitude"],
+            "longitude": data["longitude"],
         }
 
 
@@ -254,14 +258,14 @@ class McDonaldsView(ParserView):
         "dnt": "1",
         "sec-ch-ua": '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
         "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": '"Linux"',
+        "sec-ch-ua-platform": "Linux",
         "sec-fetch-dest": "document",
         "sec-fetch-mode": "navigate",
         "sec-fetch-site": "none",
         "sec-fetch-user": "?1",
         "upgrade-insecure-requests": "1",
         "user-agent": (
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 " "Safari/537.36"
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"
         ),
     }
 

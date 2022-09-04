@@ -1,35 +1,37 @@
-from pydantic import BaseModel
+from rest_framework.serializers import BooleanField, CharField, FloatField, IntegerField, ListField, Serializer
+
+from ..constants import MAX_METRO_DISTANT
 
 
-class KFCBaseModelGeometry(BaseModel):
+class KFCGeometrySerializer(Serializer):
     coordinates: list[float, float] = [0.0, 0.0]
 
 
-class KFCBaseModelEnRuStatement(BaseModel):
-    en: str = ""
-    ru: str = ""
+class KFCEnRuStatementSerializer(Serializer):
+    en = CharField(default="", allow_blank=True, required=False)
+    ru = CharField(default="", allow_blank=True, required=False)
 
 
-class KFCBaseModelCoordinatesContacts(BaseModel):
-    geometry: KFCBaseModelGeometry
+class KFCCoordinatesContactsSerializer(Serializer):
+    geometry: KFCGeometrySerializer()
 
 
-class KFCBaseModelContacts(BaseModel):
-    coordinates: KFCBaseModelCoordinatesContacts
-    phoneNumber: str = ""
-    streetAddress: KFCBaseModelEnRuStatement
+class KFCContactsSerializer(Serializer):
+    coordinates = KFCCoordinatesContactsSerializer()
+    phoneNumber = CharField(default="", allow_blank=True, required=False)
+    streetAddress = KFCEnRuStatementSerializer
 
 
-class KFCBaseModelStore(BaseModel):
-    contacts: KFCBaseModelContacts
-    features: list[str] = []
-    title: KFCBaseModelEnRuStatement
+class KFCStoreSerializer(Serializer):
+    contacts = KFCContactsSerializer()
+    features = ListField(child=CharField(default="", allow_blank=True), allow_empty=True)
+    title = KFCEnRuStatementSerializer()
 
 
-class KFCBaseModel(BaseModel):
-    distanceMeters: int | None
-    store: KFCBaseModelStore
+class KFCSerializer(Serializer):
+    distanceMeters = IntegerField(allow_null=True, default=MAX_METRO_DISTANT, required=False)
+    store = KFCStoreSerializer()
 
 
-class KFCBaseModelSearchResults(BaseModel):
-    searchResults: list[KFCBaseModel]
+class KFCSearchResultsSerializer(Serializer):
+    searchResults = KFCSerializer(many=True)

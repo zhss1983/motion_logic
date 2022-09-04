@@ -1,20 +1,20 @@
-from pydantic import BaseModel
+from rest_framework.serializers import BooleanField, CharField, FloatField, IntegerField, Serializer
 
 
-class BurgerKingBaseModel(BaseModel):
-    address: str = ""
-    latitude: float = 0.0
-    longitude: float = 0.0
-    phone: str = ""
-    name: str = ""
-    breakfast: bool = False
-    children_party: bool = False
-    metro: str | None = ""
-    king_drive: bool = False
-    parking_delivery: bool = False
-    table_delivery: bool = False
-    wifi: bool = False
+class BurgerKingSerializer(Serializer):
+    address = CharField(allow_blank=True)
+    latitude = FloatField(default=0, min_value=0, max_value=360)
+    longitude = FloatField(default=0, min_value=0, max_value=360)
+    phone = CharField(allow_blank=True)
+    name = CharField(allow_blank=True)
+    breakfast = BooleanField(default=False, required=False)
+    children_party = BooleanField(default=False, required=False)
+    metro = CharField(allow_blank=True, allow_null=True, required=False)
+    king_drive = BooleanField(default=False, required=False)
+    parking_delivery = BooleanField(default=False, required=False)
+    table_delivery = BooleanField(default=False, required=False)
+    wifi = BooleanField(default=False, required=False)
 
 
-class BurgerKingBaseModelSearchResults(BaseModel):
-    items: list[BurgerKingBaseModel]
+class BurgerKingSearchResultsSerializer(Serializer):
+    items = BurgerKingSerializer(many=True)
